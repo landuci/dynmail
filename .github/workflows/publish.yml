@@ -8,6 +8,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: prod
     permissions:
       contents: read
       id-token: write # Required for npm provenance
@@ -35,9 +36,9 @@ jobs:
         with:
           node-version: "20"
           registry-url: 'https://registry.npmjs.org'
-          always-auth: true
+
+      - name: Update npm for trusted publishing
+        run: npm install -g npm@latest
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
