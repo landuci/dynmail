@@ -1,3 +1,3 @@
-import { setup } from "@ark/attest"
+import { setup } from '@ark/attest'
 
 export default () => setup({})

@@ -1,14 +1,18 @@
 {
-  "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "strict": true,
-    "moduleResolution": "bundler",
-    "noUncheckedIndexedAccess": true,
-    "baseUrl": ".",
-    "resolveJsonModule": true,
-    "paths": {
-      "~/*": ["src/*"]
-    }
-  }
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"strict": true,
+		"moduleResolution": "bundler",
+		"noUncheckedIndexedAccess": true,
+		"baseUrl": ".",
+		"resolveJsonModule": true,
+		"declaration": true,
+		"declarationMap": true,
+		"paths": {
+			"~/*": ["src/*"]
+		}
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules", "dist"]
 }
