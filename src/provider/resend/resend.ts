@@ -1,0 +1,169 @@
+import { randomUUID } from 'node:crypto'
+import { pkg } from '~/pkg'
+import {
+	Provider,
+	type ProviderOptions,
+	type SendMailParams
+} from '../provider'
+import {
+	type AnyResendError,
+	createResendError,
+	MissingApiKeyConfigError
+} from './resend.error'
+
+export function resend<const ID extends string>(
+	params: ResendParams<ID> & { id: ID }
+): Resend<ID>
+export function resend(
+	params?: ResendParams<'default'> & { id?: never }
+): Resend<'default'>
+export function resend<ID extends string = 'default'>(
+	params: ResendParams<ID> = {}
+): Resend<ID> {
+	const apiKey =
+		params?.apiKey ??
+		(typeof process !== 'undefined' && process.env.RESEND_API_KEY)
+
+	if (!apiKey) {
+		throw new MissingApiKeyConfigError('resend')
+	}
+
+	function parseSendParams(
+		sendParams: SendMailParams<ResendProviderOptions>
+	): ResendSendMailParams {
+		return {
+			from: sendParams.from.toString(),
+			to: sendParams.to,
+			bcc: sendParams.bcc,
+			cc: sendParams.cc,
+			reply_to: sendParams.replyTo,
+			subject: sendParams.subject,
+			html: sendParams.html,
+			text: sendParams.text,
+			headers: sendParams.headers,
+			attachments: sendParams.attachments?.map((attachment) => ({
+				filename: attachment.filename,
+				content: attachment.content,
+				path: attachment.path,
+				content_type: attachment.contentType
+			}))
+		}
+	}
+
+	let resolvedApiKey: string | undefined
+
+	return new Provider<
+		ID,
+		'resend',
+		ResendProviderOptions,
+		void,
+		AnyResendError
+	>({
+		id: params.id,
+		provider: 'resend',
+		options: { supportsAttachments: true },
+		send: async (sendParams) => {
+			const emailOptions = parseSendParams(sendParams)
+			const idempotencyKey = randomUUID()
+
+			if (!resolvedApiKey) {
+				if (typeof apiKey === 'string') {
+					resolvedApiKey = apiKey
+				} else {
+					const result = apiKey()
+
+					if (result instanceof Promise) {
+						resolvedApiKey = await result
+					} else {
+						resolvedApiKey = result
+					}
+				}
+			}
+
+			try {
+				const response = await fetch('https://api.resend.com/emails', {
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${resolvedApiKey}`,
+						'Content-Type': 'application/json',
+						'Idempotency-Key': idempotencyKey,
+						'User-Agent': `dynmail/${pkg.version}`
+					},
+					body: JSON.stringify(emailOptions)
+				})
+
+				if (!response.ok) {
+					const json = (await response.json().catch(() => undefined)) as
+						| { code?: string; message?: string }
+						| undefined
+
+					return {
+						status: 'failure',
+						error: createResendError(
+							json?.code || 'unknown_error',
+							json?.message,
+							response.status
+						)
+					}
+				}
+
+				return { status: 'success' }
+			} catch {
+				return {
+					status: 'failure',
+					error: createResendError(
+						'network_error',
+						'An error occurred while sending the email. Please check your network connection and try again.',
+						500
+					)
+				}
+			}
+		}
+	})
+}
+
+export type Resend<ID extends string = 'default'> = Provider<
+	ID,
+	'resend',
+	ResendProviderOptions,
+	void,
+	AnyResendError
+>
+
+export type ResendProviderOptions = ProviderOptions & {
+	supportsAttachments: true
+}
+
+export type ResendParams<ID extends string = 'default'> = {
+	/**
+	 * The identifier for the Resend provider. This is useful when you have
+	 * multiple providers and need to distinguish between them.
+	 */
+	id?: ID
+
+	/**
+	 * The API key for the Resend provider. This is required to authenticate
+	 * requests to the Resend API.
+	 *
+	 * @default process.env.RESEND_API_KEY
+	 */
+	apiKey?: string | (() => string) | (() => Promise<string>) | undefined
+}
+
+type ResendSendMailParams = {
+	from: string
+	to: string | string[]
+	bcc?: string | string[]
+	cc?: string | string[]
+	reply_to?: string | string[]
+	subject: string
+	html: string
+	text?: string
+	headers?: Record<string, string>
+	attachments?: Array<{
+		filename: string
+		content?: string | Buffer
+		path?: string
+		content_type?: string
+	}>
+}
