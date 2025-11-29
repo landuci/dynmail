@@ -290,6 +290,218 @@ export const resendHandlers = {
 // Create a server instance that can be configured per test
 export const server = setupServer()
 
+// AWS SES handlers
+export const sesHandlers = {
+	success: http.post('https://email.us-east-1.amazonaws.com/', () => {
+		return new HttpResponse(
+			`<SendRawEmailResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+				<SendRawEmailResult>
+					<MessageId>0102018e1234567-abcdef01-2345-6789-abcd-ef0123456789-000000</MessageId>
+				</SendRawEmailResult>
+				<ResponseMetadata>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ResponseMetadata>
+			</SendRawEmailResponse>`,
+			{
+				status: 200,
+				headers: { 'Content-Type': 'text/xml' }
+			}
+		)
+	}),
+
+	accountSendingPaused: http.post(
+		'https://email.us-east-1.amazonaws.com/',
+		() => {
+			return new HttpResponse(
+				`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+					<Error>
+						<Type>Sender</Type>
+						<Code>AccountSendingPausedException</Code>
+						<Message>Email sending is disabled for your entire Amazon SES account.</Message>
+					</Error>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ErrorResponse>`,
+				{
+					status: 400,
+					headers: { 'Content-Type': 'text/xml' }
+				}
+			)
+		}
+	),
+
+	configurationSetDoesNotExist: http.post(
+		'https://email.us-east-1.amazonaws.com/',
+		() => {
+			return new HttpResponse(
+				`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+					<Error>
+						<Type>Sender</Type>
+						<Code>ConfigurationSetDoesNotExist</Code>
+						<Message>Configuration set does not exist.</Message>
+					</Error>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ErrorResponse>`,
+				{
+					status: 400,
+					headers: { 'Content-Type': 'text/xml' }
+				}
+			)
+		}
+	),
+
+	mailFromDomainNotVerified: http.post(
+		'https://email.us-east-1.amazonaws.com/',
+		() => {
+			return new HttpResponse(
+				`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+					<Error>
+						<Type>Sender</Type>
+						<Code>MailFromDomainNotVerifiedException</Code>
+						<Message>The message could not be sent because Amazon SES could not read the MX record required to use the specified MAIL FROM domain.</Message>
+					</Error>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ErrorResponse>`,
+				{
+					status: 400,
+					headers: { 'Content-Type': 'text/xml' }
+				}
+			)
+		}
+	),
+
+	messageRejected: http.post('https://email.us-east-1.amazonaws.com/', () => {
+		return new HttpResponse(
+			`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+					<Error>
+						<Type>Sender</Type>
+						<Code>MessageRejected</Code>
+						<Message>Email address is not verified.</Message>
+					</Error>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ErrorResponse>`,
+			{
+				status: 400,
+				headers: { 'Content-Type': 'text/xml' }
+			}
+		)
+	}),
+
+	signatureDoesNotMatch: http.post(
+		'https://email.us-east-1.amazonaws.com/',
+		() => {
+			return new HttpResponse(
+				`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+					<Error>
+						<Type>Sender</Type>
+						<Code>SignatureDoesNotMatch</Code>
+						<Message>The request signature we calculated does not match the signature you provided.</Message>
+					</Error>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ErrorResponse>`,
+				{
+					status: 403,
+					headers: { 'Content-Type': 'text/xml' }
+				}
+			)
+		}
+	),
+
+	accessDenied: http.post('https://email.us-east-1.amazonaws.com/', () => {
+		return new HttpResponse(
+			`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+				<Error>
+					<Type>Sender</Type>
+					<Code>AccessDenied</Code>
+					<Message>You do not have permission to perform this action.</Message>
+				</Error>
+				<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+			</ErrorResponse>`,
+			{
+				status: 403,
+				headers: { 'Content-Type': 'text/xml' }
+			}
+		)
+	}),
+
+	invalidClientTokenId: http.post(
+		'https://email.us-east-1.amazonaws.com/',
+		() => {
+			return new HttpResponse(
+				`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+					<Error>
+						<Type>Sender</Type>
+						<Code>InvalidClientTokenId</Code>
+						<Message>The security token included in the request is invalid.</Message>
+					</Error>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ErrorResponse>`,
+				{
+					status: 403,
+					headers: { 'Content-Type': 'text/xml' }
+				}
+			)
+		}
+	),
+
+	throttling: http.post('https://email.us-east-1.amazonaws.com/', () => {
+		return new HttpResponse(
+			`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+				<Error>
+					<Type>Sender</Type>
+					<Code>Throttling</Code>
+					<Message>Rate exceeded. Please slow down your request rate.</Message>
+				</Error>
+				<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+			</ErrorResponse>`,
+			{
+				status: 429,
+				headers: { 'Content-Type': 'text/xml' }
+			}
+		)
+	}),
+
+	serviceUnavailable: http.post(
+		'https://email.us-east-1.amazonaws.com/',
+		() => {
+			return new HttpResponse(
+				`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+					<Error>
+						<Type>Sender</Type>
+						<Code>ServiceUnavailable</Code>
+						<Message>The service is temporarily unavailable.</Message>
+					</Error>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ErrorResponse>`,
+				{
+					status: 503,
+					headers: { 'Content-Type': 'text/xml' }
+				}
+			)
+		}
+	),
+
+	internalFailure: http.post('https://email.us-east-1.amazonaws.com/', () => {
+		return new HttpResponse(
+			`<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+					<Error>
+						<Type>Sender</Type>
+						<Code>InternalFailure</Code>
+						<Message>An internal error occurred.</Message>
+					</Error>
+					<RequestId>a1b2c3d4-e5f6-1234-5678-1234567890ab</RequestId>
+				</ErrorResponse>`,
+			{
+				status: 500,
+				headers: { 'Content-Type': 'text/xml' }
+			}
+		)
+	}),
+
+	networkError: http.post('https://email.us-east-1.amazonaws.com/', () => {
+		return HttpResponse.error()
+	})
+}
+
 // Helper to use specific handlers
 export function usePlunkHandler(handlerName: keyof typeof plunkHandlers): void {
 	server.use(plunkHandlers[handlerName])
@@ -299,4 +511,8 @@ export function useResendHandler(
 	handlerName: keyof typeof resendHandlers
 ): void {
 	server.use(resendHandlers[handlerName])
+}
+
+export function useSesHandler(handlerName: keyof typeof sesHandlers): void {
+	server.use(sesHandlers[handlerName])
 }
