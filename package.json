@@ -54,6 +54,7 @@
 		"test": "vitest",
 		"format": "bunx biome format --write",
 		"lint": "bunx biome lint && tsc --noEmit",
-		"prepublishOnly": "bun run build"
+		"prepublishOnly": "bun run build",
+		"publish": "bun run scripts/publish.ts"
 	}
 }
