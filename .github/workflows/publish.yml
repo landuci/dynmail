@@ -27,6 +27,11 @@ jobs:
       - name: Run tests
         run: bun run test --run
 
+      - name: Set version from tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          npm version $VERSION --no-git-tag-version
+
       - name: Build
         run: bun run build
 
